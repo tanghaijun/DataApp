@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>首页</title>
+    <meta http-equiv="Access-Control-Allow-Origin" content="*">
+	<meta http-equiv="content-security-policy">
+    <meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <!--标准mui.css-->
+    <link rel="stylesheet" href="./css/mui.min.css">
+    <!--App自定义的css-->
+    <!--<link rel="stylesheet" type="text/css" href="./css/app.css" />-->
+    <style>
+        .title {
+            
+            color: #6d6d72;
+            font-size: 15px;
+        }
+
+        .mui-bar-popover {
+            width: 50%;
+        }
+
+       .mui-scroll
+       {
+           font-size:14px;
+       }
+
+        .mui-media-body {
+            white-space: pre-line;
+        }
+
+        .mui-ellipsis {
+            font-size: 12px;
+        }
+        
+    </style>
+</head>
+<body>
+    <header class="mui-bar mui-bar-nav">
+        <!-- <a class="mui-icon mui-icon-left-nav mui-pull-left" style="display:none">
+        	 <h1 class="mui-title">列表</h1>
+        </a> -->
+       
+       
+        	
+       
+        
+        <div class="mui-input-row mui-search">
+            <input type="search" class="mui-input-clear" placeholder="" id="keyword">
+        </div>
+    </header>
+    <nav class="mui-bar mui-bar-tab ">
+        <a class="mui-tab-item Popover_1 item" href="#" data="1">出售</a>
+        <a class="mui-tab-item Popover_2 item" href="#" data="2">求购</a>
+    </nav>
+    <div class="mui-content mui-scroll-wrapper" id="Popover">
+        <div class="mui-scroll">
+            <ul class="mui-table-view mui-table-view-chevron "></ul>
+
+        </div>
+    </div>
+    <input type="hidden" id="pageIndex" value="1" />
+</body>
+<script src="./js/mui.min.js"></script>
+<script src="./js/zepto.min.js"></script>
+<script>
+    var api="http://t.yanchengqu.com/fangweb";
+	//var api="http://localhost:5248";
+	var href = window.location.href;
+    var reg = /type=(.*)&*/;
+    var matchpara = reg.exec(href);
+    var type = "1";
+    if (matchpara) {
+            type = matchpara[1];
+        }
+    var dom = type == "1" ? "Popover" : "Popover";
+    $("." + dom + "_" + type).addClass("mui-active").siblings().removeClass("mui-active");
+    function pullupRefresh() {
+        setTimeout(function () {
+            getData(type, dom, parseInt($("#pageIndex").val()) + 1, 2);
+            mui('#' + dom).pullRefresh().endPullupToRefresh(); //refresh completed
+        }, 1500);
+    }
+    function pulldownRefresh() {
+        setTimeout(function () {
+            getData(type, dom, "1", 1);
+            mui('#' + dom).pullRefresh().endPulldownToRefresh(); //refresh completed
+        }, 1500);
+    }
+    function getData(type, dom, pageIndex, isapend) {
+    	var data={
+                type: type,
+                keyword: $("#keyword").val(),
+                pageIndex: pageIndex
+           }
+    	$.ajax({
+    		url: api+'/index/GetData',
+    		data: data,
+    		type: "GET",
+    		dataType: 'jsonp',
+    		success: function (result) {
+    			//console.log(data);
+    			//alert($("#keyword").val())
+                //服务器返回响应，根据响应结果，分析是否登录成功；
+                if (result.state == 100) {
+                    //$("#pageIndex").val(parseInt(pageIndex) + 1);
+                    var str = "";
+                    for (var i = 0; i < result.data.length; i++) {
+                        str += '<li id="' + result.data[i].ID + '" class="mui-table-view-cell mui-media" data="' + result.data[i].url + '"><a class="mui-navigate-right"> <img class="mui-media-object mui-pull-left" src="' + result.data[i].ImgUrl + '"><div class="mui-media-body">' + result.data[i].Title + '-[' + result.data[i].Source + ']<p class="mui-ellipsis">' + (type == 1 ? (result.data[i].Price + "-" + result.data[i].Desc) : result.data[i].Desc) + result.data[i].SourceType + '</p></div> </a> </li>';
+
+                    }
+                    
+                    if (!isapend||isapend == 1) {
+                    	 //alert($("#keyword").val());
+                    	$("#pageIndex").val(1);
+             
+                        $("#" + dom + " ul").html(str);
+                    }
+                    else {
+                        $("#" + dom + " ul").append(str);
+                        if(result.data.length>0){
+                        	$("#pageIndex").val(parseInt($("#pageIndex").val())+1);
+                        }
+                        
+
+                    }
+                    $("#" + dom + " ul li").each(function (k, v) {
+                        $("#" + dom + " ul li")[k].addEventListener('tap', function () {
+                            //点击响应逻辑
+                            var url = $(this).attr('data');
+                            mui.openWindow({
+                                url: url,
+                                id: 'myweb',
+                                extras: {
+                                },
+                                createNew: true,//是否重复创建同样id的webview，默认为false:不重复创建，直接显示
+                                show: {
+                                    autoShow: true,//页面loaded事件发生后自动显示，默认为true
+                                    aniShow:"pop-in",
+                                    duration: 100//页面动画持续时间，Android平台默认100毫秒，iOS平台默认200毫秒；
+                                },
+                                waiting: {
+                                    autoShow: true,//自动显示等待框，默认为true
+                                    title: '正在加载...',//等待对话框上显示的提示内容
+                                }
+                            });
+                            mui.back=function(){
+                            	plus.webview.close("myweb");
+                            }
+                            //$("#myweb").attr("src", url)
+                            //$("#myweb").parent().css("z-index",9);
+
+                            //$(".mui-pull-left").show();
+
+
+                        });
+                    });
+                }
+                else {
+                    alert(result.mes);
+                }
+            },
+            error: function (xhr, type, errorThrown) {
+                //异常处理；
+                console.log(type);
+            }
+		});
+        
+        
+    }
+    $(function () {
+        mui.init({
+            pullRefresh: {
+                container: '#' + dom,
+                down: {
+                    contentrefresh: '正在加载...',
+                    callback: pulldownRefresh,
+                    auto:true
+                },
+                up: {
+                    contentrefresh: '正在加载...',
+                    callback: pullupRefresh
+                    
+                },
+                swipeBack:true
+            }
+           
+        });
+       
+        mui(".mui-tab-item").each(function (k, v) {
+            mui(".mui-tab-item")[k].addEventListener('tap', function () {
+                var tp = $(this).attr("data");
+                window.location.href = '?type=' + tp;
+            });
+        })
+
+        getData(type, dom, $("#pageIndex").val());
+        $("#keyword").keyup(function () {
+        	//alert(1);
+            getData(type, dom, $("#pageIndex").val(), 1);
+        });
+        
+    });
+    
+    
+   
+</script>
+</html>
